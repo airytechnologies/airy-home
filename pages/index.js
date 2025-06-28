@@ -3,6 +3,7 @@ import Head from 'next/head';
 export default function Home() {
   return (
 <<<<<<< HEAD
+<<<<<<< HEAD
     <div className="bg-[#d8a0a6] h-screen text-black flex flex-col items-center justify-center">
       <h1 className="text-5xl font-bold tracking-widest">airy</h1>
       <p className="mt-2 text-sm uppercase">this was always going to happen</p>
@@ -16,6 +17,8 @@ export default function Home() {
       </nav>
     </div>
 =======
+=======
+>>>>>>> 441ce8c (Add meta tags and favicon support)
     <>
       <Head>
         <title>airy — Blockchain, Rebuilt</title>
@@ -36,6 +39,9 @@ export default function Home() {
         </nav>
       </div>
     </>
+<<<<<<< HEAD
+>>>>>>> 441ce8c (Add meta tags and favicon support)
+=======
 >>>>>>> 441ce8c (Add meta tags and favicon support)
   )
 }
