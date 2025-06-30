@@ -1,0 +1,8 @@
+{
+  "timestamp": "2025-06-30T07:45:00Z",
+  "userAgent": "Mozilla/5.0 (Test Click 1)",
+  "referrer": "https://airychain.io/",
+  "ip": "192.0.2.1",
+  "notes": "First successful breath after button activation. Backfilled with metadata preserved.",
+  "reconstructed": true
+}
