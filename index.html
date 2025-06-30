@@ -2,23 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>airy</title>
-  <link rel="stylesheet" href="/styles/airy.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #fafafa;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    button {
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      background-color: black;
+      color: white;
+      cursor: pointer;
+    }
+
+    #breatheResult {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-  <main class="airy-container">
-    <h1 class="airy-heading">Welcome to airy</h1>
-    <p class="airy-subheading">One block at a time.<br />One breath at a time.</p>
+  <h1>airy</h1>
+  <button id="breatheButton">breathe</button>
+  <p id="breatheResult"></p>
 
-    <nav>
-      <ul>
-        <li><a href="/about/">About</a></li>
-        <li><a href="/contributors/">Contribute</a></li>
-        <li><a href="/docs/">Docs</a></li>
-        <li><a href="/contact/">Contact</a></li>
-      </ul>
-    </nav>
-  </main>
+  <script>
+    document.getElementById("breatheButton").onclick = async () => {
+      const response = await fetch("/api/breathe", { method: "POST" });
+      const data = await response.json();
+      document.getElementById("breatheResult").textContent = data.message;
+    };
+  </script>
 </body>
 </html>
