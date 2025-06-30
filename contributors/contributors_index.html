@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contribute to airy</title>
+  <link rel="stylesheet" href="/styles/airy.css" />
+  <style>
+    .error { color: red; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <main class="airy-container">
+    <h1 class="airy-heading">You can leave a mark</h1>
+    <p class="airy-subheading">
+      airy is breathing.<br/>
+      This is where the next block begins.
+    </p>
+
+    <form id="contributeForm" action="https://formspree.io/f/your-form-id" method="POST" enctype="multipart/form-data" class="airy-form">
+      <label for="name">Your name</label>
+      <input type="text" name="name" id="name" required />
+
+      <label for="message">Your message</label>
+      <textarea name="message" id="message" rows="5" required></textarea>
+
+      <label for="file">Upload a file (optional)</label>
+      <input type="file" name="file" id="file" />
+      <div id="fileError" class="error"></div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById('contributeForm');
+    const fileInput = document.getElementById('file');
+    const fileError = document.getElementById('fileError');
+
+    const allowedExtensions = ['.airyb', '.txt', '.md', '.jpg', '.jpeg', '.png', '.pdf'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    form.addEventListener('submit', function (e) {
+      const file = fileInput.files[0];
+      fileError.textContent = '';
+
+      if (file) {
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+          e.preventDefault();
+          fileError.textContent = `Invalid file type. Allowed: ${allowedExtensions.join(', ')}`;
+        } else if (file.size > maxSize) {
+          e.preventDefault();
+          fileError.textContent = 'File too large. Max size is 5MB.';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

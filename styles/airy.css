@@ -1,0 +1,8 @@
+body {
+  background: #f9f9f9;
+  font-family: sans-serif;
+  padding: 2rem;
+}
+.airy-container { max-width: 700px; margin: auto; }
+.airy-heading { font-size: 2rem; }
+.airy-subheading { font-size: 1.2rem; color: #555; }

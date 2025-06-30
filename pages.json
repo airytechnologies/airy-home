@@ -1,0 +1,32 @@
+{
+  "home": {
+    "title": "airy",
+    "path": "/index.html",
+    "description": "The rhythm begins here."
+  },
+  "about": {
+    "title": "About airy",
+    "path": "/about/index.html",
+    "description": "Where it came from. Why it breathes."
+  },
+  "contributors": {
+    "title": "Contribute",
+    "path": "/contributors/index.html",
+    "description": "Leave a mark. Add your breath."
+  },
+  "docs": {
+    "title": "Documentation",
+    "path": "/docs/index.html",
+    "description": "What must be remembered."
+  },
+  "contact": {
+    "title": "Contact",
+    "path": "/contact/index.html",
+    "description": "Reach the source."
+  },
+  "ethics": {
+    "title": "Why airy is not for speculation",
+    "path": "/docs/ethics/why_airy_is_not_for_speculation.html",
+    "description": "A refusal to be used for extraction."
+  }
+}
