@@ -42,7 +42,12 @@
   <h1>airy</h1>
   <button id="breatheButton">breathe</button>
   <p id="breatheResult"></p>
-
+  
+  <footer style="text-align: center; font-size: 0.875rem; margin-top: 3rem; margin-bottom: 1rem; color: #888;">
+    <p>© 2025 Airy Technologies, LLC. All rights reserved.</p>
+    <p><em>System and Method for Rhythm-Based Blockchain Infrastructure Without Cryptocurrency – Patents Pending.</em></p>
+  </footer>
+  
   <script>
     document.getElementById("breatheButton").onclick = async () => {
       const response = await fetch("/api/breathe", { method: "POST" });
