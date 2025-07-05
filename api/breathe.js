@@ -27,9 +27,15 @@ export default async function handler(req, res) {
     const next = String(latest + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
 
+    // Timestamps
+    const now = new Date();
+    const humanReadable = now.toISOString();
+    const nanoTimestamp = process.hrtime.bigint().toString(); // nanoseconds as string
+
     // Build file content
     const content = {
-      timestamp: new Date().toISOString(),
+      timestamp_human: humanReadable,
+      timestamp_nano: nanoTimestamp,
       ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
       userAgent: req.headers['user-agent'] || 'unknown',
       referrer: req.headers['referer'] || 'unknown'
