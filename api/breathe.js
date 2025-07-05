@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
@@ -7,43 +9,49 @@ export default async function handler(req, res) {
   const owner = 'airytechnologies';
   const repo = 'airy-home';
   const path = 'airyblocks';
-
   const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   try {
-    // Get list of blocks
+    // Get current list of airyblocks
     const response = await fetch(baseUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
     const files = await response.json();
 
-    // Find the highest numbered block
-    const latest = files
+    const latestBlock = files
       .filter(f => f.name.endsWith('.airyb'))
       .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
       .sort((a, b) => b - a)[0] || 0;
 
-    const next = String(latest + 1).padStart(6, '0');
+    const next = String(latestBlock + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
+    const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
 
-    // Timestamps
-    const now = new Date();
-    const humanReadable = now.toISOString();
-    const nanoTimestamp = process.hrtime.bigint().toString(); // nanoseconds as string
+    const timestamp = new Date();
+    const timestampNano = process.hrtime.bigint().toString();
 
-    // Build file content
+    // Core payload
     const content = {
-      timestamp_human: humanReadable,
-      timestamp_nano: nanoTimestamp,
-      ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
-      userAgent: req.headers['user-agent'] || 'unknown',
-      referrer: req.headers['referer'] || 'unknown'
+      version: '1.0.0',
+      schema_ref: 'airy.schema.001',
+      timestamp_human: timestamp.toISOString(),
+      timestamp_nano: timestampNano,
+      agent: {
+        type: 'human',
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown',
+        referrer: req.headers['referer'] || 'unknown'
+      },
+      parent: parent,
+      meta: {}, // intentionally left open
     };
+
+    // Hash the JSON string before adding hash field
+    const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
+    content.hash = hash;
 
     const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-    // Commit new file
     const commit = await fetch(`${baseUrl}/${filename}`, {
       method: 'PUT',
       headers: {
