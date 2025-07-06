@@ -1,0 +1,37 @@
+name: Hash Validator
+
+description: >
+  This workflow recalculates hashes on airyblocks to ensure structural integrity
+  and catches any mismatch due to tampering or manual edits.
+
+on:
+  push:
+    paths:
+      - 'airyblocks/**.airyb'
+  schedule:
+    - cron: '0 * * * *'  # Every hour on the hour
+
+jobs:
+  validate-hash:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Run hash validator
+        run: node scripts/recalculate_hash.js
+
+      - name: Commit and push if changes
+        run: |
+          git config --global user.name "Airy HashBot"
+          git config --global user.email "hashbot@airychain.io"
+          git add airyblocks/*.airyb
+          git diff --cached --quiet || git commit -m "Auto: Recalculated hashes"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.AIRY_BOT_TOKEN }}
