@@ -1,16 +1,15 @@
 {
   "version": "1.0.0",
   "schema_ref": "airy.schema.001",
-  "timestamp_human": "2025-07-05T03:28:22.008Z",
-  "timestamp_nano": "217341698923",
+  "timestamp_human": "2025-07-06T13:37:01.916Z",
+  "timestamp_nano": "15129109412",
   "agent": {
     "type": "human",
-    "ip": "216.103.158.110",
-    "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+    "ip": "68.216.144.17",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
     "referrer": "https://www.airychain.io/"
   },
-  "parent": "block_000022",
-  "meta": {
-    "note": "schema.001 is live (manually entered note)"
-  }
+  "parent": "block_000025",
+  "meta": {test 2},
+  "hash": "c71d1e6bf277adc436c6e5c7689e3f86bc53219c8d4802f2b0f2712fed31b7d0"
 }
