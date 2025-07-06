@@ -1,3 +1,4 @@
+# Force reindex to correct broken detection bug
 name: Tamper Check Bot
 
 on:
