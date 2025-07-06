@@ -12,7 +12,13 @@ function calculateHash(content) {
 
 function loadTamperLog() {
   if (fs.existsSync(tamperLogPath)) {
-    return JSON.parse(fs.readFileSync(tamperLogPath, 'utf8'));
+    const raw = fs.readFileSync(tamperLogPath, 'utf8');
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
   }
   return [];
 }
