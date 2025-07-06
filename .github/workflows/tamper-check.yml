@@ -2,8 +2,8 @@ name: Tamper Check Bot
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
-  workflow_dispatch:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch: {}   # manual trigger support
 
 jobs:
   tamper-check:
@@ -20,3 +20,4 @@ jobs:
 
       - name: Run tamper bot from tamper/
         run: node tamper/tamper_bot_v0.1.js
+
