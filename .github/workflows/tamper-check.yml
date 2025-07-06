@@ -1,9 +1,9 @@
 name: Tamper Check Bot
 
 on:
+  workflow_dispatch: {}
   schedule:
-    - cron: '0 * * * *'  # every hour
-  workflow_dispatch: {}   # manual trigger support
+    - cron: '0 * * * *'
 
 jobs:
   tamper-check:
@@ -18,6 +18,6 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Run tamper bot from tamper/
+      - name: Run tamper bot
         run: node tamper/tamper_bot_v0.1.js
 
