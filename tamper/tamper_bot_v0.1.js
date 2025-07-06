@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load blocks directory
-const blocksDir = path.join(__dirname, '..', 'airyblocks');
+// Load blocks directory from repo root
+const blocksDir = path.resolve('airyblocks');
 
-// Load tamper log JSON
+// Load tamper log JSON from current script folder
 const tamperLogPath = path.join(__dirname, 'tamper_log.json');
 let tamperLog;
 
@@ -42,6 +42,10 @@ function checkBlocks() {
   // Write back tamper log
   fs.writeFileSync(tamperLogPath, JSON.stringify(tamperLog, null, 2));
   console.log('✅ Tamper check complete.');
+}
+
+checkBlocks();
+
 }
 
 checkBlocks();
