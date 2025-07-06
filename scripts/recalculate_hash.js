@@ -57,5 +57,5 @@ files.forEach(file => {
 });
 
 
-updateHashes();
+run();
 
