@@ -1,0 +1,38 @@
+{
+  "detected_at": "2025-07-05T03:52:06.223090Z",
+  "ip": "216.103.158.110",
+  "original_block": {
+    "version": "1.0.0",
+    "schema_ref": "airy.schema.001",
+    "timestamp_human": "2025-07-05T03:28:22.008Z",
+    "timestamp_nano": "217341698923",
+    "agent": {
+      "type": "human",
+      "ip": "216.103.158.110",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+      "referrer": "https://www.airychain.io/"
+    },
+    "parent": "block_000022",
+    "meta": {
+      "note": "schema.001 is live (manually entered note)"
+    },
+    "hash": "0d51778fce666c71688c97193eca4b45bfb184aa73ed24f28d0aa23b3c2b1585"
+  },
+  "tampered_block": {
+    "version": "1.0.0",
+    "schema_ref": "airy.schema.001",
+    "timestamp_human": "2025-07-05T03:28:22.008Z",
+    "timestamp_nano": "217341698923",
+    "agent": {
+      "type": "human",
+      "ip": "216.103.158.110",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1",
+      "referrer": "https://www.airychain.io/"
+    },
+    "parent": "block_000022",
+    "meta": {
+      "note": "schema.001 was tampered"
+    }
+  },
+  "new_hash": "17faa6c3f23400fed1c7a4d4231976af82b5e9af44aa4f40e460fa2af999e4fc"
+}
