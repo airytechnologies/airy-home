@@ -1,0 +1,28 @@
+name: Prevent airyblock edits or deletes
+
+on:
+  push:
+    paths:
+      - 'airyblocks/**'
+  pull_request:
+    paths:
+      - 'airyblocks/**'
+
+jobs:
+  block-edits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check for modifications or deletions
+        run: |
+          git fetch origin main
+          CHANGES=$(git diff --name-status origin/main HEAD | grep -E '^M|^D' | grep 'airyblocks/' || true)
+          if [ ! -z "$CHANGES" ]; then
+            echo "❌ Block edit or delete detected:"
+            echo "$CHANGES"
+            exit 1
+          else
+            echo "✅ No block modifications detected."
+          fi
