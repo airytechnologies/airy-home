@@ -2,37 +2,60 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const blocksDir = path.join(__dirname, '../airyblocks');
+const airyblockDir = path.join(__dirname, '..', 'airyblocks');
 
-function calculateHash(content) {
-  return crypto.createHash('sha256').update(content).digest('hex');
+function calculateHash(block) {
+  const hashInput = JSON.stringify({
+    version: block.version,
+    schema_ref: block.schema_ref,
+    timestamp_human: block.timestamp_human,
+    timestamp_nano: block.timestamp_nano,
+    agent: block.agent,
+    parent: block.parent,
+    meta: block.meta
+  });
+  return crypto.createHash('sha256').update(hashInput).digest('hex');
 }
 
-function updateHashes() {
-  const files = fs.readdirSync(blocksDir).filter(f => f.endsWith('.airyb'));
+function isValidBlock(block) {
+  return (
+    block &&
+    block.version &&
+    block.schema_ref &&
+    block.timestamp_human &&
+    block.timestamp_nano &&
+    block.agent &&
+    block.parent &&
+    block.meta
+  );
+}
 
-  for (const file of files) {
-    const filePath = path.join(blocksDir, file);
-    const raw = fs.readFileSync(filePath, 'utf8');
-    let block;
+const files = fs.readdirSync(airyblockDir).filter(file => file.endsWith('.airyb'));
 
-    try {
-      block = JSON.parse(raw);
-    } catch {
-      console.warn(`Skipping invalid block: ${file}`);
-      continue;
+files.forEach(file => {
+  const filePath = path.join(airyblockDir, file);
+  const data = fs.readFileSync(filePath, 'utf-8');
+
+  try {
+    const json = JSON.parse(data);
+    if (!isValidBlock(json)) {
+      console.log(`Skipping invalid block: ${file}`);
+      return;
     }
 
-    const { hash, ...withoutHash } = block;
-    const newHash = calculateHash(JSON.stringify(withoutHash));
+    const currentHash = json.hash;
+    const newHash = calculateHash(json);
 
-    if (hash !== newHash) {
-      block.hash = newHash;
-      fs.writeFileSync(filePath, JSON.stringify(block, null, 2));
-      console.log(`🔁 Recalculated hash for: ${file}`);
+    if (currentHash !== newHash) {
+      json.hash = newHash;
+      fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + '\n');
+      console.log(`🔄 Hash updated for: ${file}`);
     }
+  } catch (e) {
+    console.log(`⚠️ Error processing ${file}: ${e.message}`);
   }
-}
+});
+
 
 updateHashes();
 
