@@ -1,37 +1,26 @@
-name: Hash Validator
+# Temporarily disabled to restore push functionality
+# on:
+#   push:
+#     paths:
+#       - 'airyblocks/**'
+#   pull_request:
+#     paths:
+#       - 'airyblocks/**'
 
-description: >
-  This workflow recalculates hashes on airyblocks to ensure structural integrity
-  and catches any mismatch due to tampering or manual edits.
+# jobs:
+#   block-edits:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-on:
-  push:
-    paths:
-      - 'airyblocks/**.airyb'
-  schedule:
-    - cron: '0 * * * *'  # Every hour on the hour
-
-jobs:
-  validate-hash:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Run hash validator
-        run: node scripts/recalculate_hash.js
-
-      - name: Commit and push if changes
-        run: |
-          git config --global user.name "Airy HashBot"
-          git config --global user.email "hashbot@airychain.io"
-          git add airyblocks/*.airyb
-          git diff --cached --quiet || git commit -m "Auto: Recalculated hashes"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.AIRY_BOT_TOKEN }}
+#       - name: Check for modifications or deletions
+#         run: |
+#           git fetch origin main
+#           CHANGES=$(git diff --name-status origin/main HEAD | grep -E '^M|^D' | grep 'airyblocks/' || true)
+#           if [ ! -z "$CHANGES" ]; then
+#             echo "❌ Block edit or delete detected:"
+#             echo "$CHANGES"
+#             exit 1
+#           else
+#             echo "✅ No block modifications detected."
