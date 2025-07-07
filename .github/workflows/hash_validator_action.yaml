@@ -1,26 +1,24 @@
-# Temporarily disabled to restore push functionality
-# on:
-#   push:
-#     paths:
-#       - 'airyblocks/**'
-#   pull_request:
-#     paths:
-#       - 'airyblocks/**'
+name: Hash Validator
 
-# jobs:
-#   block-edits:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'airyblocks/**/*.airyb'  # Only trigger on changes to .airyb files
 
-#       - name: Check for modifications or deletions
-#         run: |
-#           git fetch origin main
-#           CHANGES=$(git diff --name-status origin/main HEAD | grep -E '^M|^D' | grep 'airyblocks/' || true)
-#           if [ ! -z "$CHANGES" ]; then
-#             echo "❌ Block edit or delete detected:"
-#             echo "$CHANGES"
-#             exit 1
-#           else
-#             echo "✅ No block modifications detected."
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Validate No Tampering
+        run: |
+          # Compare only airyblocks/ .airyb files
+          git fetch origin main
+          git diff --name-status origin/main HEAD | grep -E '^M|^D' | grep 'airyblocks/.*\.airyb' && {
+            echo "Error: Modifying or deleting .airyb files is not allowed.";
+            exit 1;
+          } || echo "Validation passed — no tampering with airyblocks/*.airyb."
