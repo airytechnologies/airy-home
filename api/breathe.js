@@ -25,17 +25,7 @@ export default async function handler(req, res) {
 
     const next = String(latestBlock + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
-    const fileUrl = `${baseUrl}/${filename}`;
     const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
-
-    // ✅ Check if this block already exists
-    const existingCheck = await fetch(fileUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (existingCheck.status === 200) {
-      return res.status(409).json({ error: `Block ${filename} already exists — refusing to overwrite.` });
-    }
 
     const timestamp = new Date();
     const timestampNano = process.hrtime.bigint().toString();
@@ -56,12 +46,13 @@ export default async function handler(req, res) {
       meta: {}, // intentionally left open
     };
 
+    // Hash the JSON string before adding hash field
     const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
     content.hash = hash;
 
     const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-    const commit = await fetch(fileUrl, {
+    const commit = await fetch(`${baseUrl}/${filename}`, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
