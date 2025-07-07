@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "schema_ref": "airy.schema.001",
+  "timestamp_human": "2025-07-07T17:34:45.074Z",
+  "timestamp_nano": "478687204224",
+  "agent": {
+    "type": "human",
+    "ip": "108.147.2.27",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+    "referrer": "https://airy-build-7m3qw5v40-joe-airy-gardenbelles-projects.vercel.app/"
+  },
+  "parent": "block_000030",
+  "meta": {},
+  "hash": "b1f0ce898a6edba361d02e3c5666fd2c1ac69452c25c431ff948497e584b31a4"
+}
