@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "airy.block",
+  "type": "object",
+  "required": [
+    "version",
+    "schema_ref",
+    "timestamp_human",
+    "timestamp_nano",
+    "agent",
+    "parent",
+    "meta",
+    "hash"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "schema_ref": {
+      "type": "string",
+      "enum": ["airy.schema.001"]
+    },
+    "timestamp_human": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timestamp_nano": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "agent": {
+      "type": "object",
+      "required": ["type", "ip", "userAgent"],
+      "properties": {
+        "type": { "type": "string" },
+        "ip": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "referrer": { "type": ["string", "null"] }
+      }
+    },
+    "parent": {
+      "type": ["string", "null"]
+    },
+    "meta": {
+      "type": "object"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}
