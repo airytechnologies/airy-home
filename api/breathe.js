@@ -1,10 +1,11 @@
-import crypto from 'crypto';
+const crypto = require('crypto');
+const fetch = require('node-fetch');
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const token = process.env.GITHUB_TOKEN;
-  if (!token) return res.status(500).send('Missing GitHub token');
+  if (!token) return res.status(500).json({ error: 'Missing GitHub token' });
 
   const owner = 'airytechnologies';
   const repo = 'airy-home';
@@ -40,8 +41,15 @@ export default async function handler(req, res) {
     const timestamp = new Date();
     const timestampNano = process.hrtime.bigint().toString();
 
-@@ -56,30 +46,31 @@
-      meta: {}, // intentionally left open
+    const content = {
+      data: {
+        timestamp: timestamp.toISOString(),
+        timestampNano,
+        userAgent: req.headers['user-agent'],
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        parent,
+      },
+      meta: {}
     };
 
     const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
@@ -70,4 +78,4 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-}
+};
