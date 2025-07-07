@@ -25,34 +25,31 @@ export default async function handler(req, res) {
 
     const next = String(latestBlock + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
+    const fileUrl = `${baseUrl}/${filename}`;
     const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
+
+    // ✅ Check if this block already exists
+    const existingCheck = await fetch(fileUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (existingCheck.status === 200) {
+      return res.status(409).json({ error: `Block ${filename} already exists — refusing to overwrite.` });
+    }
 
     const timestamp = new Date();
     const timestampNano = process.hrtime.bigint().toString();
 
-    // Core payload
-    const content = {
-      version: '1.0.0',
-      schema_ref: 'airy.schema.001',
-      timestamp_human: timestamp.toISOString(),
-      timestamp_nano: timestampNano,
-      agent: {
-        type: 'human',
-        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown',
-        userAgent: req.headers['user-agent'] || 'unknown',
-        referrer: req.headers['referer'] || 'unknown'
-      },
-      parent: parent,
+@@ -56,30 +46,31 @@
       meta: {}, // intentionally left open
     };
 
-    // Hash the JSON string before adding hash field
     const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
     content.hash = hash;
 
     const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-    const commit = await fetch(`${baseUrl}/${filename}`, {
+    const commit = await fetch(fileUrl, {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
