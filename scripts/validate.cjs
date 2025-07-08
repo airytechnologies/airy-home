@@ -4,14 +4,14 @@ const crypto = require('crypto');
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 
+// Setup AJV with formats
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+
 const airyblocksDir = path.join(process.cwd(), 'airyblocks');
 const schemaPath = path.join(process.cwd(), 'schema', 'airy.schema.001.json');
 
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
-
-const ajv = new Ajv({ allErrors: true });
-addFormats(ajv);
-
 const validate = ajv.compile(schema);
 
 const files = fs.readdirSync(airyblocksDir).filter(f => f.endsWith('.airyb'));
