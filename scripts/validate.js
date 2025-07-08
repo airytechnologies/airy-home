@@ -30,18 +30,19 @@ files.forEach(file => {
   const valid = validate(blockWithoutHash);
   const recalculated = crypto.createHash('sha256').update(JSON.stringify(blockWithoutHash)).digest('hex');
 
-  if (!valid) {
-    console.log(`❌ ${file} failed schema validation:`);
-    console.log(validate.errors);
-    failed++;
-  } else if (recalculated !== hash) {
-    console.log(`❌ ${file} failed hash check`);
-    console.log(`Expected: ${hash}`);
-    console.log(`Actual:   ${recalculated}`);
-    failed++;
-  } else {
-    console.log(`✅ ${file} passed`);
-    passed++;
+if (!valid) {
+  console.log(`❌ ${file} failed schema validation:`);
+  console.log(JSON.stringify(validate.errors, null, 2));
+  failed++;
+} else if (recalculated !== hash) {
+  console.log(`❌ ${file} failed hash check`);
+  console.log(`Expected hash: ${hash}`);
+  console.log(`Recalculated:  ${recalculated}`);
+  failed++;
+} else {
+  console.log(`✅ ${file} passed`);
+  passed++;
+}
   }
 });
 
