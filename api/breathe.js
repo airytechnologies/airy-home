@@ -1,83 +1,81 @@
-// api/breathe.js
-import { NextResponse } from 'next/server';
-import { Octokit } from 'octokit';
+const crypto = require('crypto');
+const fetch = require('node-fetch');
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-const REPO = 'airy-home';
-const OWNER = 'airytechnologies';
-const BRANCH = 'main';
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(500).json({ error: 'Missing GitHub token' });
 
-export async function POST(req) {
+  const owner = 'airytechnologies';
+  const repo = 'airy-home';
+  const path = 'airyblocks';
+  const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
   try {
-    const body = await req.json();
-    const { content, filename } = body;
+    // Get current list of airyblocks
+    const response = await fetch(baseUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const files = await response.json();
 
-    // Step 1: Get SHA of latest main commit
-    const {
-      data: {
-        object: { sha: latestMainSha },
-      },
-    } = await octokit.rest.git.getRef({
-      owner: OWNER,
-      repo: REPO,
-      ref: `heads/${BRANCH}`,
+    const latestBlock = files
+      .filter(f => f.name.endsWith('.airyb'))
+      .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
+      .sort((a, b) => b - a)[0] || 0;
+
+    const next = String(latestBlock + 1).padStart(6, '0');
+    const filename = `block_${next}.airyb`;
+    const fileUrl = `${baseUrl}/${filename}`;
+    const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
+
+    // ✅ Check if this block already exists
+    const existingCheck = await fetch(fileUrl, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    // Step 2: Create new branch from main
-    const branchName = `breathe/pr-${Date.now()}`;
-    await octokit.rest.git.createRef({
-      owner: OWNER,
-      repo: REPO,
-      ref: `refs/heads/${branchName}`,
-      sha: latestMainSha,
-    });
-
-    // Step 3: Commit file to new branch
-    const encodedContent = Buffer.from(content).toString('base64');
-    await octokit.rest.repos.createOrUpdateFileContents({
-      owner: OWNER,
-      repo: REPO,
-      path: `airyblocks/${filename}`,
-      message: `Add ${filename} via breathe`,
-      content: encodedContent,
-      branch: branchName,
-    });
-
-    // Step 4: Open pull request to main
-    const {
-      data: { number: prNumber, html_url: prUrl },
-    } = await octokit.rest.pulls.create({
-      owner: OWNER,
-      repo: REPO,
-      title: `Add ${filename} via breathe`,
-      head: branchName,
-      base: BRANCH,
-      body: `Automated breathe submission: ${filename}`,
-    });
-
-    // Step 5: Enable auto-merge if allowed
-    try {
-      await octokit.graphql(`
-        mutation ($prId: ID!) {
-          enablePullRequestAutoMerge(input: { pullRequestId: $prId, mergeMethod: MERGE }) {
-            pullRequest { number, autoMergeRequest { enabledBy { login } } }
-          }
-        }
-      `, {
-        prId: `MDExOlB1bGxSZXF1ZXN0${prNumber.toString().padStart(6, '0')}`,
-        headers: { 
-          authorization: `token ${process.env.GITHUB_TOKEN}` 
-        }
-      });
-    } catch (e) {
-      console.warn('Auto-merge not enabled:', e.message);
+    if (existingCheck.status === 200) {
+      return res.status(409).json({ error: `Block ${filename} already exists — refusing to overwrite.` });
     }
 
-    return NextResponse.json({ status: 'ok', prUrl });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: `GitHub error: ${JSON.stringify(e.message)}` }, { status: 409 });
-  }
-}
+    const timestamp = new Date();
+    const timestampNano = process.hrtime.bigint().toString();
 
+    const content = {
+      data: {
+        timestamp: timestamp.toISOString(),
+        timestampNano,
+        userAgent: req.headers['user-agent'],
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        parent,
+      },
+      meta: {}
+    };
+
+    const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
+    content.hash = hash;
+
+    const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
+
+    const commit = await fetch(fileUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: `block_${next} committed`,
+        content: encodedContent,
+      }),
+    });
+
+    if (!commit.ok) {
+      const err = await commit.text();
+      throw new Error(`GitHub error: ${err}`);
+    }
+
+    return res.status(200).json({ message: `block_${next} created`, metadata: content });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+};
