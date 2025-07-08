@@ -42,7 +42,6 @@ if (!valid) {
 } else {
   console.log(`✅ ${file} passed`);
   passed++;
-}
   }
 });
 
