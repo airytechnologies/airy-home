@@ -1,81 +1,66 @@
-const crypto = require('crypto');
-const fetch = require('node-fetch');
+// api/breathe.js
 
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+import { NextResponse } from 'next/server';
 
-  const token = process.env.GITHUB_TOKEN;
-  const owner = 'airytechnologies';
-  const repo = 'airy-home';
-  const path = 'airyblocks';
+export const config = {
+  runtime: 'edge',
+};
+
+export default async function handler(req) {
+  const { GITHUB_TOKEN, REPO_OWNER, REPO_NAME } = process.env;
 
   const headers = {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github+json',
     'Content-Type': 'application/json',
-    'Accept': 'application/vnd.github+json',
   };
 
+  const owner = REPO_OWNER || 'airytechnologies';
+  const repo = REPO_NAME || 'airy-home';
+  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '');
+  const filename = `block_${timestamp}.airyb`;
+  const branchName = `breathe-${timestamp}`;
+  const content = `The breath was placed at ${new Date().toISOString()}\n`;
+
   try {
-    // Step 1: Get latest block number
-    const contentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers });
-    const files = await contentsRes.json();
+    // Step 1: Get default branch SHA
+    const branchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, {
+      headers,
+    });
 
-    const latest = files
-      .filter(f => f.name.endsWith('.airyb'))
-      .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
-      .sort((a, b) => b - a)[0] || 0;
+    const branchData = await branchRes.json();
+    const latestCommitSha = branchData.object.sha;
 
-    const next = String(latest + 1).padStart(6, '0');
-    const filename = `block_${next}.airyb`;
-    const parent = latest > 0 ? `block_${String(latest).padStart(6, '0')}` : null;
-
-    // Step 2: Create content
-    const content = {
-      version: "1.0.0",
-      schema_ref: "airy.schema.001",
-      timestamp_human: new Date().toISOString(),
-      timestamp_nano: process.hrtime.bigint().toString(),
-      agent: {
-        type: "human",
-        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        referrer: req.headers['referer'] || null,
-      },
-      parent,
-      meta: {}
-    };
-
-    content.hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
-    const encoded = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
-
-    // Step 3: Create branch
-    const mainShaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, { headers });
-    const { object: { sha: baseSha } } = await mainShaRes.json();
-
-    const branchName = `breathe/block_${next}`;
+    // Step 2: Create a new branch from main
     await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         ref: `refs/heads/${branchName}`,
-        sha: baseSha,
+        sha: latestCommitSha,
       }),
     });
 
-    // Step 4: Commit file to new branch
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}/${filename}`, {
+    // Step 3: Commit the new block file to the new branch
+    const encodedContent = Buffer.from(content).toString('base64');
+
+    const commitRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/airyblocks/${filename}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify({
-        message: `block_${next} committed via breath`,
-        content: encoded,
+        message: `Add ${filename}`,
+        content: encodedContent,
         branch: branchName,
       }),
     });
 
-    // Step 5: Open pull request
+    const commitData = await commitRes.json();
+
+    if (!commitRes.ok) {
+      throw new Error(commitData.message || 'Failed to commit file');
+    }
+
+    // Step 4: Open a pull request from new branch into main
     const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
       method: 'POST',
       headers,
@@ -83,15 +68,25 @@ module.exports = async function handler(req, res) {
         title: `Add ${filename}`,
         head: branchName,
         base: 'main',
-        body: 'Block added via breathe button 🫁',
+        body: 'Automated PR from /breathe endpoint',
       }),
     });
 
-    const pr = await prRes.json();
+    const prData = await prRes.json();
 
-    return res.status(200).json({ message: `PR opened: ${pr.html_url}` });
-  } catch (err) {
-    console.error('❌ breathe error:', err);
-    return res.status(500).json({ error: err.message || 'Unexpected error' });
+    if (!prRes.ok) {
+      throw new Error(prData.message || 'Failed to open pull request');
+    }
+
+    return new NextResponse(
+      JSON.stringify({ message: 'Pull request created', url: prData.html_url }),
+      { status: 200 }
+    );
+  } catch (e) {
+    return new NextResponse(
+      JSON.stringify({ error: e.message }),
+      { status: 500 }
+    );
   }
-};
+}
+
