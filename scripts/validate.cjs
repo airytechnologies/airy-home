@@ -1,22 +1,19 @@
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
-import Ajv from 'ajv';
-import addFormats from 'ajv-formats';
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const Ajv = require('ajv');
+const addFormats = require('ajv-formats');
 
-// Paths
 const airyblocksDir = path.join(process.cwd(), 'airyblocks');
 const schemaPath = path.join(process.cwd(), 'schema', 'airy.schema.001.json');
 
-// Load schema
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf-8'));
 
-// Setup AJV with formats (like "date-time")
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
+
 const validate = ajv.compile(schema);
 
-// Read block files
 const files = fs.readdirSync(airyblocksDir).filter(f => f.endsWith('.airyb'));
 
 let passed = 0;
