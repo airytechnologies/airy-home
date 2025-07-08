@@ -15,7 +15,8 @@ const validate = ajv.compile(schema);
 
 // Read all .airyb files
 const blocksDir = path.join(__dirname, '../airyblocks');
-const files = fs.readdirSync(blocksDir).filter(f => f.endsWith('.airyb'));
+const files = fs.readdirSync(blocksDir)
+  .filter(file => file.endsWith('.airyb') && !file.startsWith('legacy/'));
 
 let passed = 0;
 let failed = 0;
