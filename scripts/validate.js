@@ -27,7 +27,7 @@ files.forEach(file => {
   const block = JSON.parse(raw);
 
   const { hash, ...blockWithoutHash } = block;
-  const valid = validate(blockWithoutHash);
+  const valid = validate(block);
   const recalculated = crypto.createHash('sha256').update(JSON.stringify(blockWithoutHash)).digest('hex');
 
   if (!valid) {
