@@ -1,92 +1,83 @@
 // api/breathe.js
+import { NextResponse } from 'next/server';
+import { Octokit } from 'octokit';
 
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
+const REPO = 'airy-home';
+const OWNER = 'airytechnologies';
+const BRANCH = 'main';
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
-  const { GITHUB_TOKEN, REPO_OWNER, REPO_NAME } = process.env;
-
-  const headers = {
-    Authorization: `Bearer ${GITHUB_TOKEN}`,
-    Accept: 'application/vnd.github+json',
-    'Content-Type': 'application/json',
-  };
-
-  const owner = REPO_OWNER || 'airytechnologies';
-  const repo = REPO_NAME || 'airy-home';
-  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '');
-  const filename = `block_${timestamp}.airyb`;
-  const branchName = `breathe-${timestamp}`;
-  const content = `The breath was placed at ${new Date().toISOString()}\n`;
-
+export async function POST(req) {
   try {
-    // Step 1: Get default branch SHA
-    const branchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, {
-      headers,
+    const body = await req.json();
+    const { content, filename } = body;
+
+    // Step 1: Get SHA of latest main commit
+    const {
+      data: {
+        object: { sha: latestMainSha },
+      },
+    } = await octokit.rest.git.getRef({
+      owner: OWNER,
+      repo: REPO,
+      ref: `heads/${BRANCH}`,
     });
 
-    const branchData = await branchRes.json();
-    const latestCommitSha = branchData.object.sha;
-
-    // Step 2: Create a new branch from main
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        ref: `refs/heads/${branchName}`,
-        sha: latestCommitSha,
-      }),
+    // Step 2: Create new branch from main
+    const branchName = `breathe/pr-${Date.now()}`;
+    await octokit.rest.git.createRef({
+      owner: OWNER,
+      repo: REPO,
+      ref: `refs/heads/${branchName}`,
+      sha: latestMainSha,
     });
 
-    // Step 3: Commit the new block file to the new branch
+    // Step 3: Commit file to new branch
     const encodedContent = Buffer.from(content).toString('base64');
-
-    const commitRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/airyblocks/${filename}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: `Add ${filename}`,
-        content: encodedContent,
-        branch: branchName,
-      }),
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner: OWNER,
+      repo: REPO,
+      path: `airyblocks/${filename}`,
+      message: `Add ${filename} via breathe`,
+      content: encodedContent,
+      branch: branchName,
     });
 
-    const commitData = await commitRes.json();
-
-    if (!commitRes.ok) {
-      throw new Error(commitData.message || 'Failed to commit file');
-    }
-
-    // Step 4: Open a pull request from new branch into main
-    const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        title: `Add ${filename}`,
-        head: branchName,
-        base: 'main',
-        body: 'Automated PR from /breathe endpoint',
-      }),
+    // Step 4: Open pull request to main
+    const {
+      data: { number: prNumber, html_url: prUrl },
+    } = await octokit.rest.pulls.create({
+      owner: OWNER,
+      repo: REPO,
+      title: `Add ${filename} via breathe`,
+      head: branchName,
+      base: BRANCH,
+      body: `Automated breathe submission: ${filename}`,
     });
 
-    const prData = await prRes.json();
-
-    if (!prRes.ok) {
-      throw new Error(prData.message || 'Failed to open pull request');
+    // Step 5: Enable auto-merge if allowed
+    try {
+      await octokit.graphql(`
+        mutation ($prId: ID!) {
+          enablePullRequestAutoMerge(input: { pullRequestId: $prId, mergeMethod: MERGE }) {
+            pullRequest { number, autoMergeRequest { enabledBy { login } } }
+          }
+        }
+      `, {
+        prId: `MDExOlB1bGxSZXF1ZXN0${prNumber.toString().padStart(6, '0')}`,
+        headers: { 
+          authorization: `token ${process.env.GITHUB_TOKEN}` 
+        }
+      });
+    } catch (e) {
+      console.warn('Auto-merge not enabled:', e.message);
     }
 
-    return new NextResponse(
-      JSON.stringify({ message: 'Pull request created', url: prData.html_url }),
-      { status: 200 }
-    );
+    return NextResponse.json({ status: 'ok', prUrl });
   } catch (e) {
-    return new NextResponse(
-      JSON.stringify({ error: e.message }),
-      { status: 500 }
-    );
+    console.error(e);
+    return NextResponse.json({ error: `GitHub error: ${JSON.stringify(e.message)}` }, { status: 409 });
   }
 }
 
