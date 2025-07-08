@@ -2,132 +2,96 @@ const crypto = require('crypto');
 const fetch = require('node-fetch');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   const token = process.env.GITHUB_TOKEN;
-  if (!token) return res.status(500).json({ error: 'Missing GitHub token' });
-
   const owner = 'airytechnologies';
   const repo = 'airy-home';
-  const blocksPath = 'airyblocks';
-  const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
+  const path = 'airyblocks';
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github+json',
+  };
 
   try {
-    // Get latest block number
-    const filesRes = await fetch(`${apiBase}/contents/${blocksPath}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const files = await filesRes.json();
+    // Step 1: Get latest block number
+    const contentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers });
+    const files = await contentsRes.json();
 
-    const latestBlock = files
+    const latest = files
       .filter(f => f.name.endsWith('.airyb'))
       .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
       .sort((a, b) => b - a)[0] || 0;
 
-    const next = String(latestBlock + 1).padStart(6, '0');
+    const next = String(latest + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
-    const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
+    const parent = latest > 0 ? `block_${String(latest).padStart(6, '0')}` : null;
 
-    const timestamp = new Date();
-    const timestampNano = process.hrtime.bigint().toString();
-
+    // Step 2: Create content
     const content = {
-      version: '1.0.0',
-      schema_ref: 'airy.schema.001',
-      timestamp_human: timestamp.toISOString(),
-      timestamp_nano: timestampNano,
+      version: "1.0.0",
+      schema_ref: "airy.schema.001",
+      timestamp_human: new Date().toISOString(),
+      timestamp_nano: process.hrtime.bigint().toString(),
       agent: {
-        type: 'human',
-        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress || '',
-        userAgent: req.headers['user-agent'] || '',
-        referrer: req.headers['referer'] || '',
+        type: "human",
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        referrer: req.headers['referer'] || null,
       },
       parent,
-      meta: {},
+      meta: {}
     };
 
-    const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
-    content.hash = hash;
+    content.hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
+    const encoded = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-    const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
+    // Step 3: Create branch
+    const mainShaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, { headers });
+    const { object: { sha: baseSha } } = await mainShaRes.json();
 
-    // Get default branch
-    const repoRes = await fetch(`${apiBase}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const repoData = await repoRes.json();
-    const mainRef = repoData.default_branch || 'main';
-
-    // Get latest commit SHA
-    const mainRefRes = await fetch(`${apiBase}/git/ref/heads/${mainRef}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const mainRefData = await mainRefRes.json();
-    const latestCommitSha = mainRefData.object.sha;
-
-    // Create a new branch
-    const branchName = `block-${next}`;
-    const newRefRes = await fetch(`${apiBase}/git/refs`, {
+    const branchName = `breathe/block_${next}`;
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         ref: `refs/heads/${branchName}`,
-        sha: latestCommitSha,
+        sha: baseSha,
       }),
     });
 
-    if (!newRefRes.ok) {
-      const err = await newRefRes.text();
-      throw new Error(`Branch creation failed: ${err}`);
-    }
-
-    // ✅ Wait briefly to let GitHub register the new branch
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Commit the file to the new branch
-    const commitRes = await fetch(`${apiBase}/contents/${blocksPath}/${filename}`, {
+    // Step 4: Commit file to new branch
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}/${filename}`, {
       method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
-        message: `block_${next} committed via breathe`,
-        content: encodedContent,
+        message: `block_${next} committed via breath`,
+        content: encoded,
         branch: branchName,
       }),
     });
 
-    if (!commitRes.ok) {
-      const err = await commitRes.text();
-      throw new Error(`GitHub error: ${err}`);
-    }
-
-    // Open a PR
-    const prRes = await fetch(`${apiBase}/pulls`, {
+    // Step 5: Open pull request
+    const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         title: `Add ${filename}`,
         head: branchName,
-        base: mainRef,
-        body: 'Block created by airy breathe button.',
+        base: 'main',
+        body: 'Block added via breathe button 🫁',
       }),
     });
 
-    if (!prRes.ok) {
-      const err = await prRes.text();
-      throw new Error(`Pull request failed: ${err}`);
-    }
+    const pr = await prRes.json();
 
-    const prData = await prRes.json();
-    return res.status(200).json({ message: `block_${next} created`, pr_url: prData.html_url });
-
+    return res.status(200).json({ message: `PR opened: ${pr.html_url}` });
   } catch (err) {
-    console.error(err);
-    return res.status(500).send(`❌ ${err.message}`);
+    console.error('❌ breathe error:', err);
+    return res.status(500).json({ error: err.message || 'Unexpected error' });
   }
 };
