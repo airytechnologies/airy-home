@@ -1,0 +1,28 @@
+{
+  "name": "airy-home",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "Minimal homepage site using Next.js + Tailwind CSS.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/airytechnologies/airy-home.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/airytechnologies/airy-home/issues"
+  },
+  "homepage": "https://github.com/airytechnologies/airy-home#readme",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}
