@@ -1,0 +1,36 @@
+name: Prevent Mutations of Existing Airy Blocks
+
+on:
+  pull_request:
+    paths:
+      - 'airyblocks/*.airyb'
+
+jobs:
+  check-block-immutability:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history to compare
+
+      - name: Get list of modified airyblocks
+        id: diff
+        run: |
+          git fetch origin main
+          git diff --name-status origin/main HEAD > diff.txt
+          cat diff.txt
+          echo "MODIFIED_FILES<<EOF" >> $GITHUB_OUTPUT
+          cat diff.txt | grep '^M\|^D' | awk '{print $2}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Fail if any .airyb file was modified or deleted
+        run: |
+          if [[ -n "${{ steps.diff.outputs.MODIFIED_FILES }}" ]]; then
+            echo "❌ The following files were modified or deleted:"
+            echo "${{ steps.diff.outputs.MODIFIED_FILES }}"
+            echo "Edits or deletions to existing airyblocks are not allowed."
+            exit 1
+          else
+            echo "✅ All .airyb block changes are new additions only."
+          fi
