@@ -13,14 +13,14 @@ module.exports = async function handler(req, res) {
   const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   try {
-    // Get current list of airyblocks
-    const response = await fetch(baseUrl, {
+    const listRes = await fetch(baseUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const files = await response.json();
+
+    const files = await listRes.json();
 
     const latestBlock = files
-      .filter(f => f.name.endsWith('.airyb'))
+      .filter(f => f.name.endsWith('.airyb') && f.name.includes('block_'))
       .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
       .sort((a, b) => b - a)[0] || 0;
 
@@ -29,7 +29,6 @@ module.exports = async function handler(req, res) {
     const fileUrl = `${baseUrl}/${filename}`;
     const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
 
-    // ✅ Check if this block already exists
     const existingCheck = await fetch(fileUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -49,7 +48,7 @@ module.exports = async function handler(req, res) {
         ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         parent,
       },
-      meta: {}
+      meta: {},
     };
 
     const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
@@ -75,6 +74,7 @@ module.exports = async function handler(req, res) {
     }
 
     return res.status(200).json({ message: `block_${next} created`, metadata: content });
+
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
