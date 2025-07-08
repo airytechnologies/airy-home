@@ -2,80 +2,96 @@ const crypto = require('crypto');
 const fetch = require('node-fetch');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   const token = process.env.GITHUB_TOKEN;
-  if (!token) return res.status(500).json({ error: 'Missing GitHub token' });
-
   const owner = 'airytechnologies';
   const repo = 'airy-home';
   const path = 'airyblocks';
-  const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github+json',
+  };
 
   try {
-    // Get current list of airyblocks
-    const response = await fetch(baseUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const files = await response.json();
+    // Step 1: Get latest block number
+    const contentsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, { headers });
+    const files = await contentsRes.json();
 
-    const latestBlock = files
+    const latest = files
       .filter(f => f.name.endsWith('.airyb'))
       .map(f => parseInt(f.name.replace('block_', '').replace('.airyb', '')))
       .sort((a, b) => b - a)[0] || 0;
 
-    const next = String(latestBlock + 1).padStart(6, '0');
+    const next = String(latest + 1).padStart(6, '0');
     const filename = `block_${next}.airyb`;
-    const fileUrl = `${baseUrl}/${filename}`;
-    const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
+    const parent = latest > 0 ? `block_${String(latest).padStart(6, '0')}` : null;
 
-    // ✅ Check if this block already exists
-    const existingCheck = await fetch(fileUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (existingCheck.status === 200) {
-      return res.status(409).json({ error: `Block ${filename} already exists — refusing to overwrite.` });
-    }
-
-    const timestamp = new Date();
-    const timestampNano = process.hrtime.bigint().toString();
-
+    // Step 2: Create content
     const content = {
-      data: {
-        timestamp: timestamp.toISOString(),
-        timestampNano,
+      version: "1.0.0",
+      schema_ref: "airy.schema.001",
+      timestamp_human: new Date().toISOString(),
+      timestamp_nano: process.hrtime.bigint().toString(),
+      agent: {
+        type: "human",
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
         userAgent: req.headers['user-agent'],
-        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-        parent,
+        referrer: req.headers['referer'] || null,
       },
+      parent,
       meta: {}
     };
 
-    const hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
-    content.hash = hash;
+    content.hash = crypto.createHash('sha256').update(JSON.stringify(content)).digest('hex');
+    const encoded = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
 
-    const encodedContent = Buffer.from(JSON.stringify(content, null, 2)).toString('base64');
+    // Step 3: Create branch
+    const mainShaRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/main`, { headers });
+    const { object: { sha: baseSha } } = await mainShaRes.json();
 
-    const commit = await fetch(fileUrl, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+    const branchName = `breathe/block_${next}`;
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
+      method: 'POST',
+      headers,
       body: JSON.stringify({
-        message: `block_${next} committed`,
-        content: encodedContent,
+        ref: `refs/heads/${branchName}`,
+        sha: baseSha,
       }),
     });
 
-    if (!commit.ok) {
-      const err = await commit.text();
-      throw new Error(`GitHub error: ${err}`);
-    }
+    // Step 4: Commit file to new branch
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}/${filename}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: `block_${next} committed via breath`,
+        content: encoded,
+        branch: branchName,
+      }),
+    });
 
-    return res.status(200).json({ message: `block_${next} created`, metadata: content });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+    // Step 5: Open pull request
+    const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        title: `Add ${filename}`,
+        head: branchName,
+        base: 'main',
+        body: 'Block added via breathe button 🫁',
+      }),
+    });
+
+    const pr = await prRes.json();
+
+    return res.status(200).json({ message: `PR opened: ${pr.html_url}` });
+  } catch (err) {
+    console.error('❌ breathe error:', err);
+    return res.status(500).json({ error: err.message || 'Unexpected error' });
   }
 };
