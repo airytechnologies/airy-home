@@ -23,8 +23,10 @@ let failed = 0;
 
 files.forEach(file => {
   const filePath = path.join(blocksDir, file);
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  const block = JSON.parse(raw);
+ const raw = fs.readFileSync(filePath, 'utf-8');
+console.log(`🔍 RAW ${file} content:\n${raw}\n`); // Debug line
+const block = JSON.parse(raw);
+
 
   const { hash, ...blockWithoutHash } = block;
   const valid = validate(blockWithoutHash);
