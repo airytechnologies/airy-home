@@ -1,12 +1,8 @@
-// api/breathe.js
-
 const crypto = require('crypto');
 const fetch = require('node-fetch');
 
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) return res.status(500).json({ error: 'Missing GitHub token' });
@@ -17,7 +13,7 @@ module.exports = async function handler(req, res) {
   const baseUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   try {
-    // Get current airyblocks
+    // Get current list of airyblocks
     const response = await fetch(baseUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -33,7 +29,7 @@ module.exports = async function handler(req, res) {
     const fileUrl = `${baseUrl}/${filename}`;
     const parent = latestBlock ? `block_${String(latestBlock).padStart(6, '0')}` : null;
 
-    // Check if it already exists
+    // ✅ Check if this block already exists
     const existingCheck = await fetch(fileUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -79,9 +75,7 @@ module.exports = async function handler(req, res) {
     }
 
     return res.status(200).json({ message: `block_${next} created`, metadata: content });
-
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
 };
-
