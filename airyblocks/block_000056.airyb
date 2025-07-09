@@ -7,9 +7,9 @@
     "type": "human",
     "ip": "108.147.2.54",
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-    "referrer": "https://www.airychain.io/"
+    "referrer": "https://www.airychan.io/"
   },
   "parent": "block_000055",
-  "meta": {tried to change this block},
+  "meta": {},
   "hash": "f8eb6ca988d3d91fc2bac459b52d1d6c5df47a5fe576d1da25204bae1b0ada01"
 }
