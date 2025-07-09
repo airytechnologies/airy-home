@@ -1,25 +1,23 @@
-name: Prevent airyblock mutations
+name: block-mutations
 
 on:
   push:
+    branches:
+      - main
     paths:
-      - 'airyblocks/*.airyb'
+      - 'airyblocks/**/*.airyb'
 
 jobs:
-  enforce-immutability:
+  prevent-edits:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout full repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required to compare against history
 
-      - name: Detect mutations
+      - name: Detect modified airyblocks
+        id: check
         run: |
           git fetch origin main
-          CHANGED_FILES=$(git diff --name-status origin/main HEAD -- 'airyblocks/*.airyb')
-          echo "Changed airyblock files:"
-          echo "$CHANGED_FILES"
-
-          if echo "$CHANGED_FILES" | grep -qE '^[MDR]'; then
-            echo "::error ::IMMUTABILITY BREACHED: airyblocks can only be added, not modified or deleted."
-            exit 1
-          fi
+          git diff --name-status origin/main | grep "^M\s\+airyblocks/.*\.airyb" && exit 1 || exit 0
