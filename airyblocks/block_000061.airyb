@@ -10,6 +10,6 @@
     "referrer": "https://www.airychain.io/"
   },
   "parent": "block_000060",
-  "meta": {},
+  "meta": {changed},
   "hash": "7f7624aa86558118d7bbef01a1437cf6f5d73eb84f79e8ca4f964c15e93d4127"
 }
