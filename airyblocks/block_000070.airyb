@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "schema_ref": "airy.schema.001",
+  "timestamp_human": "2025-07-11T17:18:59.248Z",
+  "timestamp_nano": "1412710481386",
+  "agent": {
+    "type": "human",
+    "ip": "108.147.2.143",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+    "referrer": "https://www.airychain.io/"
+  },
+  "parent": "block_000069",
+  "meta": {},
+  "hash": "2d11a2f025e96572e34ff05a801d8002e2a97dedc1c5b851fb87fefc8340c029"
+}
